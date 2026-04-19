@@ -5,8 +5,12 @@ use bevy::{
     camera::{Camera2d, ClearColor},
     color::Color,
     ecs::{
-        system::{Commands, Query, ResMut},
+        component::Component,
+        event::Event,
+        observer::On,
+        system::{Commands, Query, Res, ResMut},
     },
+    input::{ButtonInput, keyboard::KeyCode},
     math::primitives::Rectangle,
     mesh::{Mesh, Mesh2d},
     sprite_render::{ColorMaterial, MeshMaterial2d},
@@ -22,6 +26,46 @@ fn setup_camera(mut commands: Commands) {
 const WIDTH: f32 = 50.;
 const MARGIN: f32 = 1.;
 
+#[derive(Component)]
+struct Meta {
+    x: i32,
+    y: i32,
+}
+
+fn color_square(
+    event: On<CustomEvent>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut query: Query<(&Meta, &MeshMaterial2d<ColorMaterial>)>,
+) {
+    let target_x = event.meta.x;
+    let target_y = event.meta.y;
+    bevy::log::info!("targeting x: {}, y: {}", target_x, target_y);
+
+    for (item, material_handle) in query.iter_mut() {
+        if item.x == target_x
+            && item.y == target_y
+            && let Some(material) = materials.get_mut(material_handle)
+        {
+            material.color = Color::WHITE;
+            return;
+        }
+    }
+}
+
+#[derive(Event)]
+struct CustomEvent {
+    meta: Meta,
+}
+
+fn read_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
+    if input.just_pressed(KeyCode::Space) {
+        commands.trigger(CustomEvent {
+            meta: Meta { x: 10, y: 5 },
+        });
+    }
+}
+
+/// spawns square grids
 fn spawn_squares(
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -53,6 +97,7 @@ fn spawn_squares(
                 Mesh2d(rect_mesh),
                 MeshMaterial2d(materials.add(color)),
                 Transform::from_xyz(x_pos, y_pos, 0.),
+                Meta { x: i, y },
             ));
         }
     }
@@ -61,7 +106,6 @@ fn spawn_squares(
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::WHITE))
-        .add_systems(Startup, setup_camera)
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "starter-top-down-2d".to_string(),
@@ -70,6 +114,8 @@ fn main() {
             }),
             ..default()
         }))
-        .add_systems(Update, spawn_squares)
+        .add_systems(Startup, (setup_camera, spawn_squares))
+        .add_systems(Update, read_input)
+        .add_observer(color_square)
         .run();
 }
