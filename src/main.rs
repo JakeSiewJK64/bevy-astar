@@ -138,7 +138,7 @@ fn color_targets(mut commands: Commands, res: Res<GlobalState>) {
     });
 }
 
-fn astar_mover(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<GlobalState>) {
+fn astar_engine(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<GlobalState>) {
     if !global_state.timer.tick(time.delta()).just_finished() {
         return;
     }
@@ -176,7 +176,7 @@ fn main() {
         })
         .add_systems(PostStartup, color_targets)
         .add_systems(Startup, (setup_camera, spawn_squares))
-        .add_systems(Update, (read_input, astar_mover))
+        .add_systems(Update, (read_input, astar_engine))
         .add_observer(color_square)
         .run();
 }
