@@ -33,7 +33,7 @@ const WIDTH: f32 = 50.;
 const MARGIN: f32 = 1.;
 
 #[derive(Component, Clone, Copy)]
-struct Meta {
+struct Coordinate {
     x: i32,
     y: i32,
 }
@@ -41,10 +41,10 @@ struct Meta {
 fn color_square(
     event: On<ColorSquareEvent>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut query: Query<(&Meta, &MeshMaterial2d<ColorMaterial>)>,
+    mut query: Query<(&Coordinate, &MeshMaterial2d<ColorMaterial>)>,
 ) {
-    let target_x = event.meta.x;
-    let target_y = event.meta.y;
+    let target_x = event.coordinate.x;
+    let target_y = event.coordinate.y;
     bevy::log::info!("targeting x: {}, y: {}", target_x, target_y);
 
     for (item, material_handle) in query.iter_mut() {
@@ -60,7 +60,7 @@ fn color_square(
 
 #[derive(Event)]
 struct ColorSquareEvent {
-    meta: Meta,
+    coordinate: Coordinate,
     color: Color,
 }
 
@@ -75,7 +75,7 @@ fn read_input(
 
     if input.just_pressed(KeyCode::Space) {
         commands.trigger(ColorSquareEvent {
-            meta: Meta { x: 10, y: 5 },
+            coordinate: Coordinate { x: 10, y: 5 },
             color: Color::WHITE,
         });
     }
@@ -88,7 +88,7 @@ fn spawn_squares(
     mut meshes: ResMut<Assets<Mesh>>,
     window: Query<&Window>,
 ) {
-    // get window meta
+    // get window coordinate
     let window: &Window = window.single().unwrap();
     let width: f32 = window.resolution.width(); // 1080
     let height: f32 = window.resolution.height();
@@ -113,7 +113,7 @@ fn spawn_squares(
                 Mesh2d(rect_mesh),
                 MeshMaterial2d(materials.add(color)),
                 Transform::from_xyz(x_pos, y_pos, 0.),
-                Meta { x: i, y },
+                Coordinate { x: i, y },
             ));
         }
     }
@@ -121,19 +121,19 @@ fn spawn_squares(
 
 #[derive(Resource, Clone)]
 struct GlobalState {
-    start: Meta,
-    end: Meta,
+    start: Coordinate,
+    end: Coordinate,
     timer: Timer,
-    last_node: Meta,
+    last_node: Coordinate,
 }
 
 fn color_targets(mut commands: Commands, res: Res<GlobalState>) {
     commands.trigger(ColorSquareEvent {
-        meta: res.start,
+        coordinate: res.start,
         color: Color::from(LIMEGREEN),
     });
     commands.trigger(ColorSquareEvent {
-        meta: res.end,
+        coordinate: res.end,
         color: Color::from(BROWN),
     });
 }
@@ -152,7 +152,7 @@ fn astar_mover(mut commands: Commands, time: Res<Time>, mut global_state: ResMut
         // todo: print path movement
         commands.trigger(ColorSquareEvent {
             color: Color::WHITE,
-            meta: global_state.last_node,
+            coordinate: global_state.last_node,
         });
     }
 }
@@ -169,9 +169,9 @@ fn main() {
             ..default()
         }))
         .insert_resource(GlobalState {
-            end: Meta { x: 10, y: 0 },
-            start: Meta { x: 15, y: 0 },
-            last_node: Meta { x: 15, y: 0 },
+            end: Coordinate { x: 10, y: 0 },
+            start: Coordinate { x: 15, y: 0 },
+            last_node: Coordinate { x: 15, y: 0 },
             timer: Timer::from_seconds(1., bevy::time::TimerMode::Repeating),
         })
         .add_systems(PostStartup, color_targets)
