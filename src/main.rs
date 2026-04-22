@@ -1,19 +1,25 @@
 use bevy::{
     DefaultPlugins,
-    app::{App, PluginGroup, Startup, Update},
+    app::{App, AppExit, PluginGroup, PostStartup, Startup, Update},
     asset::Assets,
     camera::{Camera2d, ClearColor},
-    color::Color,
+    color::{
+        Color,
+        palettes::css::{BROWN, LIMEGREEN},
+    },
     ecs::{
         component::Component,
         event::Event,
+        message::MessageWriter,
         observer::On,
+        resource::Resource,
         system::{Commands, Query, Res, ResMut},
     },
     input::{ButtonInput, keyboard::KeyCode},
     math::primitives::Rectangle,
     mesh::{Mesh, Mesh2d},
     sprite_render::{ColorMaterial, MeshMaterial2d},
+    time::{Time, Timer},
     transform::components::Transform,
     utils::default,
     window::{Window, WindowPlugin},
@@ -26,14 +32,14 @@ fn setup_camera(mut commands: Commands) {
 const WIDTH: f32 = 50.;
 const MARGIN: f32 = 1.;
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 struct Meta {
     x: i32,
     y: i32,
 }
 
 fn color_square(
-    event: On<CustomEvent>,
+    event: On<ColorSquareEvent>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut query: Query<(&Meta, &MeshMaterial2d<ColorMaterial>)>,
 ) {
@@ -46,21 +52,31 @@ fn color_square(
             && item.y == target_y
             && let Some(material) = materials.get_mut(material_handle)
         {
-            material.color = Color::WHITE;
+            material.color = event.color;
             return;
         }
     }
 }
 
 #[derive(Event)]
-struct CustomEvent {
+struct ColorSquareEvent {
     meta: Meta,
+    color: Color,
 }
 
-fn read_input(input: Res<ButtonInput<KeyCode>>, mut commands: Commands) {
+fn read_input(
+    input: Res<ButtonInput<KeyCode>>,
+    mut exit: MessageWriter<AppExit>,
+    mut commands: Commands,
+) {
+    if input.just_pressed(KeyCode::KeyQ) {
+        exit.write(AppExit::Success);
+    }
+
     if input.just_pressed(KeyCode::Space) {
-        commands.trigger(CustomEvent {
+        commands.trigger(ColorSquareEvent {
             meta: Meta { x: 10, y: 5 },
+            color: Color::WHITE,
         });
     }
 }
@@ -103,6 +119,44 @@ fn spawn_squares(
     }
 }
 
+#[derive(Resource, Clone)]
+struct GlobalState {
+    start: Meta,
+    end: Meta,
+    timer: Timer,
+    last_node: Meta,
+}
+
+fn color_targets(mut commands: Commands, res: Res<GlobalState>) {
+    commands.trigger(ColorSquareEvent {
+        meta: res.start,
+        color: Color::from(LIMEGREEN),
+    });
+    commands.trigger(ColorSquareEvent {
+        meta: res.end,
+        color: Color::from(BROWN),
+    });
+}
+
+fn astar_mover(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<GlobalState>) {
+    if !global_state.timer.tick(time.delta()).just_finished() {
+        return;
+    }
+
+    // todo: if more than 2, move back
+    if global_state.last_node.x > 2 {
+        // todo: decrement node x by 1
+        global_state.last_node.x -= 1;
+
+        // todo: do something when timer finish
+        // todo: print path movement
+        commands.trigger(ColorSquareEvent {
+            color: Color::WHITE,
+            meta: global_state.last_node,
+        });
+    }
+}
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::WHITE))
@@ -114,8 +168,15 @@ fn main() {
             }),
             ..default()
         }))
+        .insert_resource(GlobalState {
+            end: Meta { x: 10, y: 0 },
+            start: Meta { x: 15, y: 0 },
+            last_node: Meta { x: 15, y: 0 },
+            timer: Timer::from_seconds(1., bevy::time::TimerMode::Repeating),
+        })
+        .add_systems(PostStartup, color_targets)
         .add_systems(Startup, (setup_camera, spawn_squares))
-        .add_systems(Update, read_input)
+        .add_systems(Update, (read_input, astar_mover))
         .add_observer(color_square)
         .run();
 }
