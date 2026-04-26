@@ -26,6 +26,7 @@ use bevy::{
     utils::default,
     window::{Window, WindowPlugin},
 };
+use rand::RngExt;
 
 pub mod astar;
 
@@ -87,25 +88,76 @@ struct ColorSquareEvent {
     color: Color,
 }
 
+fn color_start_goal_nodes(commands: &mut Commands, start: Coordinate, goal: Coordinate) {
+    commands.trigger(ColorSquareEvent {
+        coordinate: start,
+        color: Color::from(LIMEGREEN),
+    });
+    commands.trigger(ColorSquareEvent {
+        coordinate: goal,
+        color: Color::from(BROWN),
+    });
+}
+
+fn clear_node_colors(commands: &mut Commands, nodes: &Vec<Coordinate>) {
+    for node in nodes {
+        commands.trigger(ColorSquareEvent {
+            color: Color::WHITE,
+            coordinate: Coordinate {
+                x: node.x,
+                y: node.y,
+                ..Default::default()
+            },
+        })
+    }
+}
+
 fn read_input(
     input: Res<ButtonInput<KeyCode>>,
     mut exit: MessageWriter<AppExit>,
+    mut global_state: ResMut<GlobalState>,
     mut commands: Commands,
 ) {
     if input.just_pressed(KeyCode::KeyQ) {
         exit.write(AppExit::Success);
     }
 
-    // for testing purposes, serves no functionality
+    // todo: change goal coordinate and reset map
     if input.just_pressed(KeyCode::Space) {
+        clear_node_colors(&mut commands, &global_state.frontier);
+        clear_node_colors(&mut commands, &global_state.expanded);
+
+        // todo: clear the previous goal node
         commands.trigger(ColorSquareEvent {
-            coordinate: Coordinate {
-                x: 10,
-                y: 5,
-                ..default()
-            },
             color: Color::WHITE,
+            coordinate: Coordinate {
+                x: global_state.end.x,
+                y: global_state.end.y,
+                ..Default::default()
+            },
         });
+        // todo: reset global data
+        let mut rng = rand::rng();
+        global_state.expanded.clear();
+        global_state.frontier.clear();
+
+        let end = Coordinate {
+            x: rng.random_range(0..TOTAL_X),
+            y: rng.random_range(0..TOTAL_Y),
+            ..Default::default()
+        };
+        let start = Coordinate {
+            x: rng.random_range(0..TOTAL_X),
+            y: rng.random_range(0..TOTAL_Y),
+            ..Default::default()
+        };
+
+        global_state.end = end;
+        global_state.start = start;
+        global_state.frontier.push(start);
+
+        // todo: color targets
+        color_start_goal_nodes(&mut commands, start, end);
     }
 }
 
@@ -192,14 +244,7 @@ impl Default for GlobalState {
 }
 
 fn color_targets(mut commands: Commands, res: Res<GlobalState>) {
-    commands.trigger(ColorSquareEvent {
-        coordinate: res.start,
-        color: Color::from(LIMEGREEN),
-    });
-    commands.trigger(ColorSquareEvent {
-        coordinate: res.end,
-        color: Color::from(BROWN),
-    });
+    color_start_goal_nodes(&mut commands, res.start, res.end);
 }
 
 fn update(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<GlobalState>) {
