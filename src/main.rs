@@ -5,7 +5,7 @@ use bevy::{
     camera::{Camera2d, ClearColor},
     color::{
         Color,
-        palettes::css::{BROWN, LIMEGREEN},
+        palettes::css::{BLACK, BROWN, LIMEGREEN},
     },
     ecs::{
         component::Component,
@@ -19,8 +19,10 @@ use bevy::{
     math::primitives::Rectangle,
     mesh::{Mesh, Mesh2d},
     sprite_render::{ColorMaterial, MeshMaterial2d},
+    text::{TextColor, TextSpan},
     time::{Time, Timer},
     transform::components::Transform,
+    ui::{PositionType, px, widget::Text},
     utils::default,
     window::{Window, WindowPlugin},
 };
@@ -147,6 +149,29 @@ fn spawn_squares(
     }
 }
 
+fn diagnostics(mut commands: Commands) {
+    commands
+        .spawn((
+            Text::new(""), // Container
+            bevy::prelude::Node {
+                position_type: PositionType::Absolute,
+                top: px(10.0), // Added offset
+                left: px(10.0),
+                ..default()
+            },
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                TextSpan::new(format!("Start: x={} y={}\n", START.x, START.y)),
+                TextColor(BLACK.into()),
+            ));
+            parent.spawn((
+                TextSpan::new(format!("Goal: x={} y={}", GOAL.x, GOAL.y)),
+                TextColor(BLACK.into()),
+            ));
+        });
+}
+
 #[derive(Resource, Clone)]
 struct GlobalState {
     start: Coordinate,
@@ -241,7 +266,7 @@ fn main() {
             ..default()
         })
         .add_systems(PostStartup, color_targets)
-        .add_systems(Startup, (setup_camera, spawn_squares, setup))
+        .add_systems(Startup, (setup_camera, spawn_squares, setup, diagnostics))
         .add_systems(Update, (read_input, update))
         .add_observer(color_square)
         .run();
