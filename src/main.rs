@@ -2,10 +2,10 @@ use bevy::{
     DefaultPlugins,
     app::{App, AppExit, PluginGroup, PostStartup, Startup, Update},
     asset::Assets,
-    camera::{Camera2d, ClearColor},
+    camera::Camera2d,
     color::{
         Color,
-        palettes::css::{BLACK, BROWN, LIMEGREEN},
+        palettes::css::{BROWN, LIMEGREEN, WHITE},
     },
     ecs::{
         component::Component,
@@ -125,8 +125,6 @@ fn spawn_squares(
     let start_x: f32 = -width / 4.0 + WIDTH / 4.0;
     let start_y: f32 = height / 4.0 - WIDTH / 4.0;
 
-    let color: Color = Color::srgb(1., 0., 0.);
-
     for i in 0..TOTAL_X {
         let x_pos: f32 = start_x + (i as f32 * (WIDTH + MARGIN));
 
@@ -137,7 +135,7 @@ fn spawn_squares(
 
             commands.spawn((
                 Mesh2d(rect_mesh),
-                MeshMaterial2d(materials.add(color)),
+                MeshMaterial2d(materials.add(Color::WHITE)),
                 Transform::from_xyz(x_pos, y_pos, 0.),
                 Coordinate {
                     x: i,
@@ -163,11 +161,11 @@ fn diagnostics(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((
                 TextSpan::new(format!("Start: x={} y={}\n", START.x, START.y)),
-                TextColor(BLACK.into()),
+                TextColor(WHITE.into()),
             ));
             parent.spawn((
                 TextSpan::new(format!("Goal: x={} y={}", GOAL.x, GOAL.y)),
-                TextColor(BLACK.into()),
+                TextColor(WHITE.into()),
             ));
         });
 }
@@ -251,7 +249,6 @@ fn setup(mut global_state: ResMut<GlobalState>) {
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::WHITE))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "starter-top-down-2d".to_string(),
