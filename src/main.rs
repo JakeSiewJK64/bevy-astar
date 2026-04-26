@@ -403,7 +403,6 @@ mod test {
 
         // the algorithm should ideally take at most 8 iterations to reach target
         for epoch in 0..8 {
-            println!("expanded list for epoch: {}", epoch);
             astar_engine(&mut payload);
             if epoch == 7 {
                 let res = astar_engine(&mut payload);
