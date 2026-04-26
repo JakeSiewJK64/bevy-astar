@@ -39,7 +39,6 @@ struct Coordinate {
     x: i32,
     y: i32,
     cost: i32,
-    h_cost: i32,
     score: i32,
 }
 
@@ -302,7 +301,6 @@ fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
                     payload.frontier.push(Coordinate {
                         x: neighbor.x,
                         y: neighbor.y,
-                        h_cost,
                         cost,
                         score: cost + h_cost,
                     });
