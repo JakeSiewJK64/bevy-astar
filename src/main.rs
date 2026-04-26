@@ -31,7 +31,13 @@ fn setup_camera(mut commands: Commands) {
 
 const GOAL: Coordinate = Coordinate {
     x: 4,
-    y: 9,
+    y: 4,
+    cost: 0,
+    score: 0,
+};
+const START: Coordinate = Coordinate {
+    x: 0,
+    y: 0,
     cost: 0,
     score: 0,
 };
@@ -341,11 +347,7 @@ fn main() {
         }))
         .insert_resource(GlobalState {
             end: GOAL,
-            start: Coordinate {
-                x: 15,
-                y: 0,
-                ..default()
-            },
+            start: START,
             ..default()
         })
         .add_systems(PostStartup, color_targets)
@@ -405,11 +407,12 @@ mod test {
             goal,
         };
 
-        for epoch in 0..6 {
+        // the algorithm should ideally take at most 8 iterations to reach target
+        for epoch in 0..8 {
             println!("expanded list for epoch: {}", epoch);
             print_coordinate_list(payload.expanded.clone());
             astar_engine(&mut payload);
-            if epoch == 5 {
+            if epoch == 7 {
                 let res = astar_engine(&mut payload);
                 assert_eq!(res, AStarStatus::Found);
             }
