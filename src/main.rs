@@ -29,13 +29,18 @@ fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
 }
 
+const TOTAL_X: i32 = 20;
+const TOTAL_Y: i32 = 10;
 const WIDTH: f32 = 50.;
 const MARGIN: f32 = 1.;
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Default)]
 struct Coordinate {
     x: i32,
     y: i32,
+    cost: i32,
+    h_cost: i32,
+    score: i32,
 }
 
 fn color_square(
@@ -45,7 +50,7 @@ fn color_square(
 ) {
     let target_x = event.coordinate.x;
     let target_y = event.coordinate.y;
-    bevy::log::info!("targeting x: {}, y: {}", target_x, target_y);
+    bevy::log::info!("Painting x: {}, y: {}", target_x, target_y);
 
     for (item, material_handle) in query.iter_mut() {
         if item.x == target_x
@@ -73,9 +78,14 @@ fn read_input(
         exit.write(AppExit::Success);
     }
 
+    // for testing purposes, serves no functionality
     if input.just_pressed(KeyCode::Space) {
         commands.trigger(ColorSquareEvent {
-            coordinate: Coordinate { x: 10, y: 5 },
+            coordinate: Coordinate {
+                x: 10,
+                y: 5,
+                ..default()
+            },
             color: Color::WHITE,
         });
     }
@@ -97,8 +107,8 @@ fn spawn_squares(
     let start_x: f32 = -width / 2.0 + WIDTH / 2.0;
     let start_y: f32 = height / 2.0 - WIDTH / 2.0;
 
-    let x_total: i32 = 20;
-    let y_total: i32 = 10;
+    let x_total: i32 = TOTAL_X;
+    let y_total: i32 = TOTAL_Y;
     let color: Color = Color::srgb(1., 0., 0.);
 
     for i in 0..x_total {
@@ -113,7 +123,11 @@ fn spawn_squares(
                 Mesh2d(rect_mesh),
                 MeshMaterial2d(materials.add(color)),
                 Transform::from_xyz(x_pos, y_pos, 0.),
-                Coordinate { x: i, y },
+                Coordinate {
+                    x: i,
+                    y,
+                    ..default()
+                },
             ));
         }
     }
@@ -124,7 +138,20 @@ struct GlobalState {
     start: Coordinate,
     end: Coordinate,
     timer: Timer,
-    last_node: Coordinate,
+    frontier: Vec<Coordinate>,
+    expanded: Vec<Coordinate>,
+}
+
+impl Default for GlobalState {
+    fn default() -> Self {
+        Self {
+            start: Default::default(),
+            end: Default::default(),
+            timer: Timer::from_seconds(1., bevy::time::TimerMode::Repeating),
+            frontier: Vec::new(),
+            expanded: Vec::new(),
+        }
+    }
 }
 
 fn color_targets(mut commands: Commands, res: Res<GlobalState>) {
@@ -138,23 +165,162 @@ fn color_targets(mut commands: Commands, res: Res<GlobalState>) {
     });
 }
 
-fn astar_engine(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<GlobalState>) {
+fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
+    let mut expanded: Vec<Coordinate> = Vec::new();
+
+    // search up
+    if coordinate.y - 1 > 0 {
+        expanded.push(Coordinate {
+            x: coordinate.x,
+            y: coordinate.y - 1,
+            ..default()
+        })
+    }
+
+    // search down
+    if coordinate.y + 1 < TOTAL_Y {
+        expanded.push(Coordinate {
+            x: coordinate.x,
+            y: coordinate.y + 1,
+            ..default()
+        })
+    }
+
+    // search left
+    if coordinate.x - 1 > 0 {
+        expanded.push(Coordinate {
+            x: coordinate.x - 1,
+            y: coordinate.y,
+            ..default()
+        })
+    }
+
+    // search right
+    if coordinate.x + 1 < TOTAL_X {
+        expanded.push(Coordinate {
+            x: coordinate.x + 1,
+            y: coordinate.y,
+            ..default()
+        })
+    }
+
+    expanded
+}
+
+fn get_manhattan_distance(coordinate: &Coordinate, goal: Coordinate) -> i32 {
+    i32::abs(goal.x - coordinate.x) + i32::abs(goal.y - coordinate.y)
+}
+
+fn update(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<GlobalState>) {
+    // todo: only tick every 2 seconds.
     if !global_state.timer.tick(time.delta()).just_finished() {
         return;
     }
 
-    // todo: if more than 2, move back
-    if global_state.last_node.x > 2 {
-        // todo: decrement node x by 1
-        global_state.last_node.x -= 1;
+    let mut payload = AStarPayload {
+        goal: global_state.end,
+        expanded: global_state.expanded.clone(),
+        frontier: global_state.frontier.clone(),
+    };
 
-        // todo: do something when timer finish
-        // todo: print path movement
-        commands.trigger(ColorSquareEvent {
-            color: Color::WHITE,
-            coordinate: global_state.last_node,
-        });
+    match astar_engine(&mut payload) {
+        AStarStatus::Found => {
+            bevy::log::info!("target found");
+        }
+        AStarStatus::Failed => {
+            bevy::log::error!("No solutions found.");
+        }
+        AStarStatus::Pending => {
+            global_state.expanded = payload.expanded;
+            global_state.frontier = payload.frontier;
+
+            // todo: sort frontier by cost
+            global_state.frontier.sort_by_key(|node| -node.score);
+
+            // todo: color frontier nodes
+            for node in &global_state.frontier {
+                commands.trigger(ColorSquareEvent {
+                    coordinate: Coordinate {
+                        x: node.x,
+                        y: node.y,
+                        ..Default::default()
+                    },
+                    color: Color::from(LIMEGREEN),
+                });
+            }
+        }
     }
+}
+
+struct AStarPayload {
+    goal: Coordinate,
+    frontier: Vec<Coordinate>,
+    expanded: Vec<Coordinate>,
+}
+
+#[derive(PartialEq, Eq, Debug)]
+enum AStarStatus {
+    Found,
+    Failed,
+    Pending,
+}
+
+fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
+    if payload.frontier.is_empty() {
+        return AStarStatus::Failed;
+    }
+
+    // todo: remove first item from frontier and put into expanded
+    if let Some(frontier_node) = payload.frontier.pop() {
+        // todo: something else
+        payload.expanded.push(frontier_node);
+
+        // todo: get last item in expanded
+        if let Some(expanded_node) = payload.expanded.last() {
+            // todo: if goal found, stop algorithm
+            if expanded_node.x == payload.goal.x && expanded_node.y == payload.goal.y {
+                return AStarStatus::Found;
+            }
+
+            let cost = expanded_node.cost + 1;
+
+            // todo: iterate neighbors
+            for neighbor in get_neighbors(expanded_node) {
+                let mut duplicate_found = false;
+
+                // todo: if neighbor not in expanded list, add them
+                for node in payload.expanded.iter() {
+                    if node.x == neighbor.x && node.y == neighbor.y {
+                        duplicate_found = true;
+                        break;
+                    }
+                }
+
+                if !duplicate_found {
+                    let h_cost = get_manhattan_distance(&neighbor, payload.goal);
+                    payload.expanded.push(neighbor);
+                    payload.frontier.push(Coordinate {
+                        x: neighbor.x,
+                        y: neighbor.y,
+                        h_cost,
+                        cost,
+                        score: cost + h_cost,
+                    });
+                }
+            }
+
+            return AStarStatus::Pending;
+        }
+    }
+
+    AStarStatus::Failed
+}
+
+fn setup(mut global_state: ResMut<GlobalState>) {
+    let last_node = global_state.start;
+
+    // todo: add starting node as frontier
+    global_state.frontier.push(last_node);
 }
 
 fn main() {
@@ -169,14 +335,139 @@ fn main() {
             ..default()
         }))
         .insert_resource(GlobalState {
-            end: Coordinate { x: 10, y: 0 },
-            start: Coordinate { x: 15, y: 0 },
-            last_node: Coordinate { x: 15, y: 0 },
-            timer: Timer::from_seconds(1., bevy::time::TimerMode::Repeating),
+            end: Coordinate {
+                x: 2,
+                y: 3,
+                ..default()
+            },
+            start: Coordinate {
+                x: 15,
+                y: 0,
+                ..default()
+            },
+            ..default()
         })
         .add_systems(PostStartup, color_targets)
-        .add_systems(Startup, (setup_camera, spawn_squares))
-        .add_systems(Update, (read_input, astar_engine))
+        .add_systems(Startup, (setup_camera, spawn_squares, setup))
+        .add_systems(Update, (read_input, update))
         .add_observer(color_square)
         .run();
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        AStarPayload, AStarStatus, Coordinate, astar_engine, get_manhattan_distance, get_neighbors,
+    };
+
+    fn print_coordinate_list(coordinates: Vec<Coordinate>) {
+        for coordinate in coordinates {
+            println!("x: {}, y: {}", coordinate.x, coordinate.y);
+        }
+    }
+
+    #[test]
+    fn test_astar_engine_stop_when_found() {
+        let goal = Coordinate {
+            x: 4,
+            y: 4,
+            ..Default::default()
+        };
+        let start = Coordinate {
+            x: 4,
+            y: 4,
+            ..Default::default()
+        };
+        let mut payload = AStarPayload {
+            expanded: vec![],
+            frontier: vec![start],
+            goal,
+        };
+
+        let res = astar_engine(&mut payload);
+        assert_eq!(res, AStarStatus::Found);
+
+        // todo: 2nd iteration
+        let goal = Coordinate {
+            x: 4,
+            y: 4,
+            ..Default::default()
+        };
+        let start = Coordinate {
+            x: 0,
+            y: 0,
+            ..Default::default()
+        };
+        let mut payload = AStarPayload {
+            expanded: vec![],
+            frontier: vec![start],
+            goal,
+        };
+
+        for epoch in 0..6 {
+            println!("expanded list for epoch: {}", epoch);
+            print_coordinate_list(payload.expanded.clone());
+            astar_engine(&mut payload);
+            if epoch == 5 {
+                let res = astar_engine(&mut payload);
+                assert_eq!(res, AStarStatus::Found);
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_manhattan_distance() {
+        // node: no diagonal movement currently
+        let coordinate = Coordinate {
+            x: 0,
+            y: 0,
+            ..Default::default()
+        };
+        let goal = Coordinate {
+            x: 2,
+            y: 2,
+            ..Default::default()
+        };
+        let distance = get_manhattan_distance(&coordinate, goal);
+
+        assert_eq!(distance, 4);
+    }
+
+    #[test]
+    fn test_get_neighbors() {
+        // todo: initialize 0,0 coordinate
+        let coordinate = Coordinate {
+            x: 5,
+            y: 5,
+            ..Default::default()
+        };
+
+        let neighbors = get_neighbors(&coordinate);
+
+        for (index, neighbor) in neighbors.iter().enumerate() {
+            // test: search up
+            if index == 0 {
+                assert_eq!(neighbor.x, 5);
+                assert_eq!(neighbor.y, 4);
+            }
+
+            // test: search down
+            if index == 1 {
+                assert_eq!(neighbor.x, 5);
+                assert_eq!(neighbor.y, 6);
+            }
+
+            // test: search left
+            if index == 2 {
+                assert_eq!(neighbor.x, 4);
+                assert_eq!(neighbor.y, 5);
+            }
+
+            // test: search right
+            if index == 3 {
+                assert_eq!(neighbor.x, 6);
+                assert_eq!(neighbor.y, 5);
+            }
+        }
+    }
 }
