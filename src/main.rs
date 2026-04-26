@@ -203,10 +203,10 @@ fn diagnostics(mut commands: Commands) {
     // todo: render helper text
     commands
         .spawn((
-            Text::new(""), // Container
+            Text::new(""),
             bevy::prelude::Node {
                 position_type: PositionType::Absolute,
-                bottom: px(10.0), // Added offset
+                bottom: px(10.0),
                 left: px(10.0),
                 ..default()
             },
@@ -221,10 +221,10 @@ fn diagnostics(mut commands: Commands) {
     // todo: render diagnostics text
     commands
         .spawn((
-            Text::new(""), // Container
+            Text::new(""),
             bevy::prelude::Node {
                 position_type: PositionType::Absolute,
-                top: px(10.0), // Added offset
+                top: px(10.0),
                 left: px(10.0),
                 ..default()
             },
