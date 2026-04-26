@@ -29,6 +29,12 @@ fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
 }
 
+const GOAL: Coordinate = Coordinate {
+    x: 4,
+    y: 9,
+    cost: 0,
+    score: 0,
+};
 const TIMER_INTERVAL: f32 = 0.25;
 const TOTAL_X: i32 = 20;
 const TOTAL_Y: i32 = 10;
@@ -334,11 +340,7 @@ fn main() {
             ..default()
         }))
         .insert_resource(GlobalState {
-            end: Coordinate {
-                x: 2,
-                y: 3,
-                ..default()
-            },
+            end: GOAL,
             start: Coordinate {
                 x: 15,
                 y: 0,
