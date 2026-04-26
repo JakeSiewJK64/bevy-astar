@@ -200,6 +200,25 @@ fn spawn_squares(
 }
 
 fn diagnostics(mut commands: Commands) {
+    // todo: render helper text
+    commands
+        .spawn((
+            Text::new(""), // Container
+            bevy::prelude::Node {
+                position_type: PositionType::Absolute,
+                bottom: px(10.0), // Added offset
+                left: px(10.0),
+                ..default()
+            },
+        ))
+        .with_children(|parent| {
+            parent.spawn((TextSpan::new("<q> quit\n"), TextColor(WHITE.into())));
+            parent.spawn((
+                TextSpan::new("<SPACE> randomize start and end nodes\n"),
+                TextColor(WHITE.into()),
+            ));
+        });
+    // todo: render diagnostics text
     commands
         .spawn((
             Text::new(""), // Container
