@@ -363,12 +363,6 @@ mod test {
         AStarPayload, AStarStatus, Coordinate, astar_engine, get_manhattan_distance, get_neighbors,
     };
 
-    fn print_coordinate_list(coordinates: Vec<Coordinate>) {
-        for coordinate in coordinates {
-            println!("x: {}, y: {}", coordinate.x, coordinate.y);
-        }
-    }
-
     #[test]
     fn test_astar_engine() {
         let goal = Coordinate {
@@ -410,7 +404,6 @@ mod test {
         // the algorithm should ideally take at most 8 iterations to reach target
         for epoch in 0..8 {
             println!("expanded list for epoch: {}", epoch);
-            print_coordinate_list(payload.expanded.clone());
             astar_engine(&mut payload);
             if epoch == 7 {
                 let res = astar_engine(&mut payload);
