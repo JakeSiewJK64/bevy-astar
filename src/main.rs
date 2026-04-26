@@ -32,8 +32,8 @@ fn setup_camera(mut commands: Commands) {
 }
 
 pub const ALLOW_DIAGONAL: bool = true;
-pub const TOTAL_X: i32 = 20;
-pub const TOTAL_Y: i32 = 10;
+pub const TOTAL_X: i32 = 50;
+pub const TOTAL_Y: i32 = 50;
 
 const GOAL: Coordinate = Coordinate {
     x: 4,
@@ -48,7 +48,7 @@ const START: Coordinate = Coordinate {
     score: 0,
 };
 const TIMER_INTERVAL: f32 = 1.;
-const WIDTH: f32 = 50.;
+const WIDTH: f32 = 10.;
 const MARGIN: f32 = 1.;
 
 #[derive(Component, Clone, Copy, Default)]
@@ -120,18 +120,16 @@ fn spawn_squares(
     let height: f32 = window.resolution.height();
 
     // calculate top left corner
-    let start_x: f32 = -width / 2.0 + WIDTH / 2.0;
-    let start_y: f32 = height / 2.0 - WIDTH / 2.0;
+    let start_x: f32 = -width / 4.0 + WIDTH / 4.0;
+    let start_y: f32 = height / 4.0 - WIDTH / 4.0;
 
-    let x_total: i32 = TOTAL_X;
-    let y_total: i32 = TOTAL_Y;
     let color: Color = Color::srgb(1., 0., 0.);
 
-    for i in 0..x_total {
+    for i in 0..TOTAL_X {
         let x_pos: f32 = start_x + (i as f32 * (WIDTH + MARGIN));
 
         // iterate y
-        for y in 0..y_total {
+        for y in 0..TOTAL_Y {
             let y_pos: f32 = start_y - (y as f32 * (WIDTH + MARGIN));
             let rect_mesh = meshes.add(Rectangle::new(WIDTH, WIDTH));
 
