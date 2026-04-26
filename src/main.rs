@@ -240,9 +240,6 @@ fn update(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<Glob
             global_state.expanded = payload.expanded;
             global_state.frontier = payload.frontier;
 
-            // todo: sort frontier by cost
-            global_state.frontier.sort_by_key(|node| -node.score);
-
             // todo: color frontier nodes
             for node in &global_state.frontier {
                 commands.trigger(ColorSquareEvent {
@@ -275,6 +272,9 @@ fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
     if payload.frontier.is_empty() {
         return AStarStatus::Failed;
     }
+
+    // todo: sort frontier by cost
+    payload.frontier.sort_by_key(|node| -node.score);
 
     // todo: remove first item from frontier and put into expanded
     if let Some(frontier_node) = payload.frontier.pop() {
@@ -368,7 +368,7 @@ mod test {
     }
 
     #[test]
-    fn test_astar_engine_stop_when_found() {
+    fn test_astar_engine() {
         let goal = Coordinate {
             x: 4,
             y: 4,
