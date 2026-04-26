@@ -25,9 +25,14 @@ use bevy::{
     window::{Window, WindowPlugin},
 };
 
+pub mod astar;
+
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
 }
+
+pub const TOTAL_X: i32 = 20;
+pub const TOTAL_Y: i32 = 10;
 
 const GOAL: Coordinate = Coordinate {
     x: 4,
@@ -42,13 +47,11 @@ const START: Coordinate = Coordinate {
     score: 0,
 };
 const TIMER_INTERVAL: f32 = 0.25;
-const TOTAL_X: i32 = 20;
-const TOTAL_Y: i32 = 10;
 const WIDTH: f32 = 50.;
 const MARGIN: f32 = 1.;
 
 #[derive(Component, Clone, Copy, Default)]
-struct Coordinate {
+pub struct Coordinate {
     x: i32,
     y: i32,
     cost: i32,
@@ -177,72 +180,26 @@ fn color_targets(mut commands: Commands, res: Res<GlobalState>) {
     });
 }
 
-fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
-    let mut expanded: Vec<Coordinate> = Vec::new();
-
-    // search up
-    if coordinate.y - 1 > 0 {
-        expanded.push(Coordinate {
-            x: coordinate.x,
-            y: coordinate.y - 1,
-            ..default()
-        })
-    }
-
-    // search down
-    if coordinate.y + 1 < TOTAL_Y {
-        expanded.push(Coordinate {
-            x: coordinate.x,
-            y: coordinate.y + 1,
-            ..default()
-        })
-    }
-
-    // search left
-    if coordinate.x - 1 > 0 {
-        expanded.push(Coordinate {
-            x: coordinate.x - 1,
-            y: coordinate.y,
-            ..default()
-        })
-    }
-
-    // search right
-    if coordinate.x + 1 < TOTAL_X {
-        expanded.push(Coordinate {
-            x: coordinate.x + 1,
-            y: coordinate.y,
-            ..default()
-        })
-    }
-
-    expanded
-}
-
-fn get_manhattan_distance(coordinate: &Coordinate, goal: Coordinate) -> i32 {
-    i32::abs(goal.x - coordinate.x) + i32::abs(goal.y - coordinate.y)
-}
-
 fn update(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<GlobalState>) {
     // todo: only tick every 2 seconds.
     if !global_state.timer.tick(time.delta()).just_finished() {
         return;
     }
 
-    let mut payload = AStarPayload {
+    let mut payload = astar::AStarPayload {
         goal: global_state.end,
         expanded: global_state.expanded.clone(),
         frontier: global_state.frontier.clone(),
     };
 
-    match astar_engine(&mut payload) {
-        AStarStatus::Found => {
+    match astar::astar_engine(&mut payload) {
+        astar::AStarStatus::Found => {
             bevy::log::info!("target found");
         }
-        AStarStatus::Failed => {
+        astar::AStarStatus::Failed => {
             bevy::log::error!("No solutions found.");
         }
-        AStarStatus::Pending => {
+        astar::AStarStatus::Pending => {
             global_state.expanded = payload.expanded;
             global_state.frontier = payload.frontier;
 
@@ -259,72 +216,6 @@ fn update(mut commands: Commands, time: Res<Time>, mut global_state: ResMut<Glob
             }
         }
     }
-}
-
-struct AStarPayload {
-    goal: Coordinate,
-    frontier: Vec<Coordinate>,
-    expanded: Vec<Coordinate>,
-}
-
-#[derive(PartialEq, Eq, Debug)]
-enum AStarStatus {
-    Found,
-    Failed,
-    Pending,
-}
-
-fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
-    if payload.frontier.is_empty() {
-        return AStarStatus::Failed;
-    }
-
-    // todo: sort frontier by cost
-    payload.frontier.sort_by_key(|node| -node.score);
-
-    // todo: remove first item from frontier and put into expanded
-    if let Some(frontier_node) = payload.frontier.pop() {
-        // todo: something else
-        payload.expanded.push(frontier_node);
-
-        // todo: get last item in expanded
-        if let Some(expanded_node) = payload.expanded.last() {
-            // todo: if goal found, stop algorithm
-            if expanded_node.x == payload.goal.x && expanded_node.y == payload.goal.y {
-                return AStarStatus::Found;
-            }
-
-            let cost = expanded_node.cost + 1;
-
-            // todo: iterate neighbors
-            for neighbor in get_neighbors(expanded_node) {
-                let mut duplicate_found = false;
-
-                // todo: if neighbor not in expanded list, add them
-                for node in payload.expanded.iter() {
-                    if node.x == neighbor.x && node.y == neighbor.y {
-                        duplicate_found = true;
-                        break;
-                    }
-                }
-
-                if !duplicate_found {
-                    let h_cost = get_manhattan_distance(&neighbor, payload.goal);
-                    payload.expanded.push(neighbor);
-                    payload.frontier.push(Coordinate {
-                        x: neighbor.x,
-                        y: neighbor.y,
-                        cost,
-                        score: cost + h_cost,
-                    });
-                }
-            }
-
-            return AStarStatus::Pending;
-        }
-    }
-
-    AStarStatus::Failed
 }
 
 fn setup(mut global_state: ResMut<GlobalState>) {
@@ -355,115 +246,4 @@ fn main() {
         .add_systems(Update, (read_input, update))
         .add_observer(color_square)
         .run();
-}
-
-#[cfg(test)]
-mod test {
-    use crate::{
-        AStarPayload, AStarStatus, Coordinate, astar_engine, get_manhattan_distance, get_neighbors,
-    };
-
-    #[test]
-    fn test_astar_engine() {
-        let goal = Coordinate {
-            x: 4,
-            y: 4,
-            ..Default::default()
-        };
-        let start = Coordinate {
-            x: 4,
-            y: 4,
-            ..Default::default()
-        };
-        let mut payload = AStarPayload {
-            expanded: vec![],
-            frontier: vec![start],
-            goal,
-        };
-
-        let res = astar_engine(&mut payload);
-        assert_eq!(res, AStarStatus::Found);
-
-        // todo: 2nd iteration
-        let goal = Coordinate {
-            x: 4,
-            y: 4,
-            ..Default::default()
-        };
-        let start = Coordinate {
-            x: 0,
-            y: 0,
-            ..Default::default()
-        };
-        let mut payload = AStarPayload {
-            expanded: vec![],
-            frontier: vec![start],
-            goal,
-        };
-
-        // the algorithm should ideally take at most 8 iterations to reach target
-        for epoch in 0..8 {
-            astar_engine(&mut payload);
-            if epoch == 7 {
-                let res = astar_engine(&mut payload);
-                assert_eq!(res, AStarStatus::Found);
-            }
-        }
-    }
-
-    #[test]
-    fn test_get_manhattan_distance() {
-        // node: no diagonal movement currently
-        let coordinate = Coordinate {
-            x: 0,
-            y: 0,
-            ..Default::default()
-        };
-        let goal = Coordinate {
-            x: 2,
-            y: 2,
-            ..Default::default()
-        };
-        let distance = get_manhattan_distance(&coordinate, goal);
-
-        assert_eq!(distance, 4);
-    }
-
-    #[test]
-    fn test_get_neighbors() {
-        // todo: initialize 0,0 coordinate
-        let coordinate = Coordinate {
-            x: 5,
-            y: 5,
-            ..Default::default()
-        };
-
-        let neighbors = get_neighbors(&coordinate);
-
-        for (index, neighbor) in neighbors.iter().enumerate() {
-            // test: search up
-            if index == 0 {
-                assert_eq!(neighbor.x, 5);
-                assert_eq!(neighbor.y, 4);
-            }
-
-            // test: search down
-            if index == 1 {
-                assert_eq!(neighbor.x, 5);
-                assert_eq!(neighbor.y, 6);
-            }
-
-            // test: search left
-            if index == 2 {
-                assert_eq!(neighbor.x, 4);
-                assert_eq!(neighbor.y, 5);
-            }
-
-            // test: search right
-            if index == 3 {
-                assert_eq!(neighbor.x, 6);
-                assert_eq!(neighbor.y, 5);
-            }
-        }
-    }
 }
