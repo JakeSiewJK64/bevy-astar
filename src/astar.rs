@@ -137,7 +137,6 @@ pub fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
 
                 if !duplicate_found {
                     let h_cost = get_manhattan_distance(&neighbor, payload.goal);
-                    payload.expanded.push(neighbor);
                     payload.frontier.push(Coordinate {
                         x: neighbor.x,
                         y: neighbor.y,
