@@ -31,6 +31,7 @@ fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
 }
 
+pub const ALLOW_DIAGONAL: bool = true;
 pub const TOTAL_X: i32 = 20;
 pub const TOTAL_Y: i32 = 10;
 
@@ -46,7 +47,7 @@ const START: Coordinate = Coordinate {
     cost: 0,
     score: 0,
 };
-const TIMER_INTERVAL: f32 = 0.25;
+const TIMER_INTERVAL: f32 = 1.;
 const WIDTH: f32 = 50.;
 const MARGIN: f32 = 1.;
 

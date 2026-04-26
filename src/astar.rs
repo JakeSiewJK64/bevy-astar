@@ -58,6 +58,46 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
         })
     }
 
+    if !crate::ALLOW_DIAGONAL {
+        return expanded;
+    }
+
+    // todo: top left
+    if coordinate.x - 1 > 0 && coordinate.y - 1 > 0 {
+        expanded.push(Coordinate {
+            x: coordinate.x - 1,
+            y: coordinate.y - 1,
+            ..default()
+        })
+    }
+
+    // todo: top right
+    if coordinate.x + 1 < crate::TOTAL_X && coordinate.y - 1 > 0 {
+        expanded.push(Coordinate {
+            x: coordinate.x + 1,
+            y: coordinate.y - 1,
+            ..default()
+        })
+    }
+
+    // todo: bottom left
+    if coordinate.x - 1 > 0 && coordinate.y + 1 < crate::TOTAL_Y {
+        expanded.push(Coordinate {
+            x: coordinate.x - 1,
+            y: coordinate.y + 1,
+            ..default()
+        })
+    }
+
+    // todo: bottom right
+    if coordinate.x + 1 < crate::TOTAL_X && coordinate.y + 1 < crate::TOTAL_Y {
+        expanded.push(Coordinate {
+            x: coordinate.x + 1,
+            y: coordinate.y + 1,
+            ..default()
+        })
+    }
+
     expanded
 }
 
@@ -159,12 +199,24 @@ mod test {
             goal,
         };
 
-        // the algorithm should ideally take at most 8 iterations to reach target
-        for epoch in 0..8 {
-            astar_engine(&mut payload);
-            if epoch == 7 {
-                let res = astar_engine(&mut payload);
-                assert_eq!(res, AStarStatus::Found);
+        if crate::ALLOW_DIAGONAL {
+            // the algorithm should ideally take at most 4 iterations to reach target
+            // if diagonal movement is allowed
+            for epoch in 0..4 {
+                astar_engine(&mut payload);
+                if epoch == 3 {
+                    let res = astar_engine(&mut payload);
+                    assert_eq!(res, AStarStatus::Found);
+                }
+            }
+        } else {
+            // the algorithm should ideally take at most 8 iterations to reach target
+            for epoch in 0..8 {
+                astar_engine(&mut payload);
+                if epoch == 7 {
+                    let res = astar_engine(&mut payload);
+                    assert_eq!(res, AStarStatus::Found);
+                }
             }
         }
     }
