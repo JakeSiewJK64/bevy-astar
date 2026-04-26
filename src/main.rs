@@ -33,10 +33,10 @@ fn setup_camera(mut commands: Commands) {
 
 pub const ALLOW_DIAGONAL: bool = true;
 pub const TOTAL_X: i32 = 50;
-pub const TOTAL_Y: i32 = 50;
+pub const TOTAL_Y: i32 = 20;
 
 const GOAL: Coordinate = Coordinate {
-    x: 4,
+    x: 30,
     y: 4,
     cost: 0,
     score: 0,
