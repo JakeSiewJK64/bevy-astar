@@ -29,6 +29,7 @@ fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
 }
 
+const TIMER_INTERVAL: f32 = 0.25;
 const TOTAL_X: i32 = 20;
 const TOTAL_Y: i32 = 10;
 const WIDTH: f32 = 50.;
@@ -146,7 +147,7 @@ impl Default for GlobalState {
         Self {
             start: Default::default(),
             end: Default::default(),
-            timer: Timer::from_seconds(1., bevy::time::TimerMode::Repeating),
+            timer: Timer::from_seconds(TIMER_INTERVAL, bevy::time::TimerMode::Repeating),
             frontier: Vec::new(),
             expanded: Vec::new(),
         }
