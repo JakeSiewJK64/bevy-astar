@@ -12,6 +12,7 @@ use bevy::{
         event::Event,
         message::MessageWriter,
         observer::On,
+        query::With,
         resource::Resource,
         system::{Commands, Query, Res, ResMut},
     },
@@ -112,14 +113,42 @@ fn clear_node_colors(commands: &mut Commands, nodes: &Vec<Coordinate>) {
     }
 }
 
+#[derive(Component)]
+struct SpeedUpText;
+
 fn read_input(
     input: Res<ButtonInput<KeyCode>>,
     mut exit: MessageWriter<AppExit>,
     mut global_state: ResMut<GlobalState>,
     mut commands: Commands,
+    mut speed_up_text_query: Query<&mut TextSpan, With<SpeedUpText>>,
 ) {
     if input.just_pressed(KeyCode::KeyQ) {
         exit.write(AppExit::Success);
+    }
+
+    // todo: speed up simulation
+    if input.just_pressed(KeyCode::KeyW) {
+        global_state.sped_up = !global_state.sped_up;
+
+        global_state.timer = Timer::from_seconds(
+            if global_state.sped_up {
+                TIMER_INTERVAL / 2.
+            } else {
+                TIMER_INTERVAL
+            },
+            bevy::time::TimerMode::Repeating,
+        );
+
+        let mut speed_up_text = speed_up_text_query.single_mut().unwrap();
+        speed_up_text.replace_range(
+            ..,
+            if global_state.sped_up {
+                "<w> Slow down\n"
+            } else {
+                "<w> Speed up\n"
+            },
+        );
     }
 
     // todo: change goal coordinate and reset map
@@ -214,6 +243,11 @@ fn diagnostics(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((TextSpan::new("<q> quit\n"), TextColor(WHITE.into())));
             parent.spawn((
+                TextSpan::new("<w> Speed up\n"),
+                SpeedUpText,
+                TextColor(WHITE.into()),
+            ));
+            parent.spawn((
                 TextSpan::new("<SPACE> randomize start and end nodes\n"),
                 TextColor(WHITE.into()),
             ));
@@ -248,6 +282,7 @@ struct GlobalState {
     timer: Timer,
     frontier: Vec<Coordinate>,
     expanded: Vec<Coordinate>,
+    sped_up: bool,
 }
 
 impl Default for GlobalState {
@@ -258,6 +293,7 @@ impl Default for GlobalState {
             timer: Timer::from_seconds(TIMER_INTERVAL, bevy::time::TimerMode::Repeating),
             frontier: Vec::new(),
             expanded: Vec::new(),
+            sped_up: false,
         }
     }
 }
