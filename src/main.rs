@@ -133,7 +133,7 @@ fn read_input(
 
         global_state.timer = Timer::from_seconds(
             if global_state.sped_up {
-                TIMER_INTERVAL / 2.
+                TIMER_INTERVAL / 4.
             } else {
                 TIMER_INTERVAL
             },
