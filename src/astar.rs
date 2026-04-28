@@ -103,6 +103,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
 
 pub fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
     if payload.frontier.is_empty() {
+        eprintln!("Frontier list is empty!");
         return AStarStatus::Failed;
     }
 
@@ -110,47 +111,54 @@ pub fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
     payload.frontier.sort_by_key(|node| -node.score);
 
     // todo: remove first item from frontier and put into expanded
-    if let Some(frontier_node) = payload.frontier.pop() {
-        // todo: something else
-        payload.expanded.push(frontier_node);
+    let Some(frontier_node) = payload.frontier.pop() else {
+        eprintln!("Could not retrieve frontier node.");
+        return AStarStatus::Failed;
+    };
 
-        // todo: get last item in expanded
-        if let Some(expanded_node) = payload.expanded.last() {
-            // todo: if goal found, stop algorithm
-            if expanded_node.x == payload.goal.x && expanded_node.y == payload.goal.y {
-                return AStarStatus::Found;
+    // todo: something else
+    payload.expanded.push(frontier_node);
+
+    // todo: get last item in expanded
+    let Some(expanded_node) = payload.expanded.last() else {
+        eprintln!("Could not retrieve last expanded node.");
+        return AStarStatus::Failed;
+    };
+
+    // todo: if goal found, stop algorithm
+    if expanded_node.x == payload.goal.x && expanded_node.y == payload.goal.y {
+        println!("Goal found.");
+        return AStarStatus::Found;
+    }
+
+    let cost = expanded_node.cost + 1;
+
+    // todo: iterate neighbors
+    for neighbor in get_neighbors(expanded_node) {
+        let mut duplicate_found = false;
+
+        // todo: if neighbor not in expanded list
+        // todo: 1. add neighbor node to expanded list.
+        // todo: 2. stop loop.
+        for node in payload.expanded.iter() {
+            if node.x == neighbor.x && node.y == neighbor.y {
+                duplicate_found = true;
+                break;
             }
+        }
 
-            let cost = expanded_node.cost + 1;
-
-            // todo: iterate neighbors
-            for neighbor in get_neighbors(expanded_node) {
-                let mut duplicate_found = false;
-
-                // todo: if neighbor not in expanded list, add them
-                for node in payload.expanded.iter() {
-                    if node.x == neighbor.x && node.y == neighbor.y {
-                        duplicate_found = true;
-                        break;
-                    }
-                }
-
-                if !duplicate_found {
-                    let h_cost = get_manhattan_distance(&neighbor, payload.goal);
-                    payload.frontier.push(Coordinate {
-                        x: neighbor.x,
-                        y: neighbor.y,
-                        cost,
-                        score: cost + h_cost,
-                    });
-                }
-            }
-
-            return AStarStatus::Pending;
+        if !duplicate_found {
+            let h_cost = get_manhattan_distance(&neighbor, payload.goal);
+            payload.frontier.push(Coordinate {
+                x: neighbor.x,
+                y: neighbor.y,
+                cost,
+                score: cost + h_cost,
+            });
         }
     }
 
-    AStarStatus::Failed
+    AStarStatus::Pending
 }
 
 #[cfg(test)]
