@@ -23,7 +23,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     let mut expanded: Vec<Coordinate> = Vec::new();
 
     // search up
-    if coordinate.y - 1 > 0 {
+    if (coordinate.y - 1) >= 0 {
         expanded.push(Coordinate {
             x: coordinate.x,
             y: coordinate.y - 1,
@@ -32,7 +32,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     }
 
     // search down
-    if coordinate.y + 1 < crate::TOTAL_Y {
+    if (coordinate.y + 1) < crate::TOTAL_Y {
         expanded.push(Coordinate {
             x: coordinate.x,
             y: coordinate.y + 1,
@@ -41,7 +41,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     }
 
     // search left
-    if coordinate.x - 1 > 0 {
+    if (coordinate.x - 1) >= 0 {
         expanded.push(Coordinate {
             x: coordinate.x - 1,
             y: coordinate.y,
@@ -50,7 +50,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     }
 
     // search right
-    if coordinate.x + 1 < crate::TOTAL_X {
+    if (coordinate.x + 1) < crate::TOTAL_X {
         expanded.push(Coordinate {
             x: coordinate.x + 1,
             y: coordinate.y,
@@ -63,7 +63,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     }
 
     // todo: top left
-    if coordinate.x - 1 > 0 && coordinate.y - 1 > 0 {
+    if (coordinate.x - 1) > 0 && (coordinate.y - 1) > 0 {
         expanded.push(Coordinate {
             x: coordinate.x - 1,
             y: coordinate.y - 1,
@@ -72,7 +72,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     }
 
     // todo: top right
-    if coordinate.x + 1 < crate::TOTAL_X && coordinate.y - 1 > 0 {
+    if (coordinate.x + 1) < crate::TOTAL_X && (coordinate.y - 1) > 0 {
         expanded.push(Coordinate {
             x: coordinate.x + 1,
             y: coordinate.y - 1,
@@ -81,7 +81,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     }
 
     // todo: bottom left
-    if coordinate.x - 1 > 0 && coordinate.y + 1 < crate::TOTAL_Y {
+    if (coordinate.x - 1) > 0 && (coordinate.y + 1) < crate::TOTAL_Y {
         expanded.push(Coordinate {
             x: coordinate.x - 1,
             y: coordinate.y + 1,
@@ -90,7 +90,7 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
     }
 
     // todo: bottom right
-    if coordinate.x + 1 < crate::TOTAL_X && coordinate.y + 1 < crate::TOTAL_Y {
+    if (coordinate.x + 1) < crate::TOTAL_X && (coordinate.y + 1) < crate::TOTAL_Y {
         expanded.push(Coordinate {
             x: coordinate.x + 1,
             y: coordinate.y + 1,
