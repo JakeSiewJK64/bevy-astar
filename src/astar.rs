@@ -103,7 +103,6 @@ fn get_neighbors(coordinate: &Coordinate) -> Vec<Coordinate> {
 
 pub fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
     if payload.frontier.is_empty() {
-        eprintln!("Frontier list is empty!");
         return AStarStatus::Failed;
     }
 
@@ -112,7 +111,6 @@ pub fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
 
     // todo: remove first item from frontier and put into expanded
     let Some(frontier_node) = payload.frontier.pop() else {
-        eprintln!("Could not retrieve frontier node.");
         return AStarStatus::Failed;
     };
 
@@ -121,13 +119,11 @@ pub fn astar_engine(payload: &mut AStarPayload) -> AStarStatus {
 
     // todo: get last item in expanded
     let Some(expanded_node) = payload.expanded.last() else {
-        eprintln!("Could not retrieve last expanded node.");
         return AStarStatus::Failed;
     };
 
     // todo: if goal found, stop algorithm
     if expanded_node.x == payload.goal.x && expanded_node.y == payload.goal.y {
-        println!("Goal found.");
         return AStarStatus::Found;
     }
 
