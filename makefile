@@ -22,7 +22,7 @@ package:
 	cp -r assets $(WASM_DIR)/ || true
 
 zip:
-	cd $(WASM_DIR) && zip --recurse-paths ../$(ZIP_NAME) .
+	cd $(WASM_DIR) && zip ../$(ZIP_NAME) bevy_game_bg.wasm bevy_game.js index.html
 
 clean:
 	rm -rf $(WASM_DIR)
