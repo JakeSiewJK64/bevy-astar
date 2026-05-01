@@ -1,6 +1,6 @@
-BINARY_NAME := your_binary_name
+BINARY_NAME := astar_algo
 TARGET := wasm32-unknown-unknown
-WASM_DIR := wasm
+WASM_DIR := ./target/wasm32-unknown-unknown/release
 ZIP_NAME := $(BINARY_NAME).zip
 
 .PHONY:
@@ -20,6 +20,8 @@ package:
 	mkdir -p $(WASM_DIR)
 	wasm-bindgen --no-typescript --out-name bevy_game --out-dir $(WASM_DIR) --target web target/$(TARGET)/release/$(BINARY_NAME).wasm
 	cp -r assets $(WASM_DIR)/ || true
+
+zip:
 	cd $(WASM_DIR) && zip --recurse-paths ../$(ZIP_NAME) .
 
 clean:
