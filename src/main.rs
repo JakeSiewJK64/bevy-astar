@@ -27,7 +27,7 @@ use bevy::{
     utils::default,
     window::{Window, WindowPlugin},
 };
-use rand::RngExt;
+use rand::Rng;
 
 pub mod astar;
 
@@ -166,18 +166,18 @@ fn read_input(
             },
         });
         // todo: reset global data
-        let mut rng = rand::rng();
+        let mut rng = rand::thread_rng();
         global_state.expanded.clear();
         global_state.frontier.clear();
 
         let end = Coordinate {
-            x: rng.random_range(0..TOTAL_X),
-            y: rng.random_range(0..TOTAL_Y),
+            x: rng.gen_range(0..TOTAL_X),
+            y: rng.gen_range(0..TOTAL_Y),
             ..Default::default()
         };
         let start = Coordinate {
-            x: rng.random_range(0..TOTAL_X),
-            y: rng.random_range(0..TOTAL_Y),
+            x: rng.gen_range(0..TOTAL_X),
+            y: rng.gen_range(0..TOTAL_Y),
             ..Default::default()
         };
 
