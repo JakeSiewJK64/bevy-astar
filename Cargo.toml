@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 bevy = { version = "0.18.1" }
-rand = "0.10.1"
+rand = "0.8"
+getrandom = { version = "0.2", features = ["js"] }
